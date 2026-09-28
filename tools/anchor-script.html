@@ -1,0 +1,11 @@
+<script>
+/* Garde le lien magique (#staticrypt_pwd=…) dans l'adresse : les liens internes défilent sans changer l'URL,
+   pour qu'un favori ou un raccourci d'écran d'accueil ouvre toujours la page sans mot de passe. */
+document.addEventListener("click",function(e){
+  var a=e.target.closest&&e.target.closest('a[href^="#"]'); if(!a) return;
+  var id=decodeURIComponent(a.getAttribute("href").slice(1)); var t=id&&document.getElementById(id); if(!t) return;
+  e.preventDefault();
+  var still=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  t.scrollIntoView({behavior:still?"auto":"smooth",block:"start"});
+});
+</script>
