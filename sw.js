@@ -1,7 +1,7 @@
 /* Banff 2026 — consultation hors ligne.
    Garde sur l'appareil une copie de la page (toujours chiffrée), des icônes et des polices.
    En ligne : la page la plus récente est téléchargée (4 s maximum), puis mise en cache.
-   Sans réseau, ou réseau trop lent : la dernière copie enregistrée est affichée. */
+   Sans réseau, réseau trop lent ou site en erreur : la dernière copie enregistrée est affichée. */
 const VERSION = "banff-v1";
 const SCOPE = self.registration.scope;
 const PAGE = new URL("index.html", SCOPE).href;
@@ -43,9 +43,15 @@ self.addEventListener("fetch", (e) => {
       return res;
     });
     e.waitUntil(net.catch(() => {}));
-    e.respondWith(
-      Promise.race([net, wait(NETWORK_WAIT_MS)]).catch(async () => (await caches.match(PAGE)) || net)
-    );
+    e.respondWith((async () => {
+      try {
+        const res = await Promise.race([net, wait(NETWORK_WAIT_MS)]);
+        if (res.ok) return res;
+        return (await caches.match(PAGE)) || res; // site en erreur (404, panne) : copie locale
+      } catch (_) {
+        return (await caches.match(PAGE)) || net;
+      }
+    })());
     return;
   }
 
