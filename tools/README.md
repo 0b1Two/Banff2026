@@ -5,4 +5,6 @@
 To update: `BANFF_PW='<password>' tools/build.sh /path/to/itinerary.html`, then commit and push.
 Do not change `tools/.staticrypt.json` (the salt); changing it or the password invalidates the shared link.
 
+Offline: `sw.js` keeps a copy of the (still encrypted) page, icons and fonts on each device after one online visit. Bump `VERSION` in `sw.js` if the list of cached files changes.
+
 Icons: `tools/icon-square.svg` (home screen, square) and `tools/favicon.svg` (rounded, browser tab).

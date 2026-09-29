@@ -8,14 +8,17 @@ TOOLS="$(cd "$(dirname "$0")" && pwd)"; REPO="$(dirname "$TOOLS")"; SRC="$(realp
 : "${BANFF_PW:?Set BANFF_PW to the page password}"
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT; cd "$WORK"; cp "$TOOLS/.staticrypt.json" .
 python3 - "$SRC" "$TOOLS" <<'PY'
-import sys
+import sys,re
 src,tools=sys.argv[1],sys.argv[2]
 s=open(src,encoding='utf8').read()
 head=open(tools+'/head-tags.html',encoding='utf8').read(); js=open(tools+'/anchor-script.html',encoding='utf8').read()
-if 'apple-touch-icon' not in s:
-    i=s.lower().find('<head>'); assert i>=0, 'no <head>'; i+=len('<head>'); s=s[:i]+'\n'+head+s[i:]
-if 'staticrypt_pwd' not in s:
-    j=s.lower().rfind('</body>'); s=(s[:j]+js+s[j:]) if j>=0 else s+js
+# Drop anything injected by an earlier build (marked blocks, plus the older unmarked tags), then inject the current version.
+s=re.sub(r'<!-- banff:(head|script) -->.*?<!-- /banff:\1 -->\n?','',s,flags=re.S)
+s=re.sub(r'<link rel="(?:icon|apple-touch-icon)"[^>]*>\n?','',s)
+s=re.sub(r'<meta name="(?:apple-mobile-web-app-title|application-name|apple-mobile-web-app-capable|mobile-web-app-capable|theme-color|robots)"[^>]*>\n?','',s)
+s=re.sub(r'<script>\n/\* Garde le lien magique.*?</script>\n?','',s,flags=re.S)
+i=s.lower().find('<head>'); assert i>=0, 'no <head>'; i+=len('<head>'); s=s[:i]+'\n'+head+s[i:]
+j=s.lower().rfind('</body>'); s=(s[:j]+js+s[j:]) if j>=0 else s+js
 open('page.html','w',encoding='utf8').write(s)
 PY
 npx -y staticrypt@3 page.html -p "$BANFF_PW" -d out --short --remember 0 \

@@ -1,3 +1,4 @@
+<!-- banff:script -->
 <script>
 /* Garde le lien magique (#staticrypt_pwd=…) dans l'adresse : les liens internes défilent sans changer l'URL,
    pour qu'un favori ou un raccourci d'écran d'accueil ouvre toujours la page sans mot de passe. */
@@ -8,4 +9,15 @@ document.addEventListener("click",function(e){
   var still=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
   t.scrollIntoView({behavior:still?"auto":"smooth",block:"start"});
 });
+/* Affiche « ✓ disponible hors ligne » sous la date quand une copie de la page est enregistrée sur l'appareil. */
+(function(){
+  if(!("caches" in window)) return;
+  caches.match(new URL("index.html",document.baseURI).href).then(function(hit){
+    var s=document.querySelector(".stamp"); if(!hit||!s||s.querySelector(".offline-ok")) return;
+    var b=document.createElement("span"); b.className="offline-ok";
+    b.textContent=" · ✓ disponible hors ligne"; b.style.color="var(--teal,#0A7680)"; b.style.fontWeight="600";
+    s.appendChild(b);
+  }).catch(function(){});
+})();
 </script>
+<!-- /banff:script -->
