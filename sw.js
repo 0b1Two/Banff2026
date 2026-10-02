@@ -1,5 +1,5 @@
 /* Banff 2026 — consultation hors ligne.
-   Garde sur l'appareil une copie de la page (toujours chiffrée), des icônes et des polices.
+   Garde sur l'appareil une copie de la page (toujours chiffrée), des icônes, des polices et des photos déjà affichées.
    En ligne : la page la plus récente est téléchargée (4 s maximum), puis mise en cache.
    Sans réseau, réseau trop lent ou site en erreur : la dernière copie enregistrée est affichée. */
 const VERSION = "banff-v1";
@@ -58,7 +58,29 @@ self.addEventListener("fetch", (e) => {
   // Icônes et polices : copie locale tout de suite, rafraîchie en arrière-plan.
   const isOwn = req.url.startsWith(SCOPE);
   const isFont = url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
-  if (!isOwn && !isFont) return;
+  const isPhoto = url.hostname === "upload.wikimedia.org";
+  if (!isOwn && !isFont && !isPhoto) return;
+
+  // Photos : elles ne changent pas, donc copie locale d'abord ; sinon réseau, puis mise en cache.
+  if (isPhoto) {
+    e.respondWith((async () => {
+      const hit = await caches.match(req, { ignoreVary: true });
+      if (hit) return hit;
+      let res;
+      try {
+        // Lecture inter-origines : on peut vérifier que la réponse est bonne avant de la garder.
+        res = await fetch(req.url, { mode: "cors", credentials: "omit" });
+      } catch (_) {
+        return fetch(req); // sans cette autorisation : affichage normal, sans copie locale
+      }
+      if (res.ok) {
+        const copy = res.clone();
+        e.waitUntil(caches.open(VERSION).then((cache) => cache.put(req, copy)).catch(() => {}));
+      }
+      return res;
+    })());
+    return;
+  }
   const refresh = fetch(req).then(async (res) => {
     if (res.ok || res.type === "opaque") {
       const copy = res.clone();
